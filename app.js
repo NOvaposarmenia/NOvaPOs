@@ -2,7 +2,17 @@
 // NOVAPOS
 // ======================================
 
-console.log("🎭 NovaPOS app.js պատրաստ է");
+console.log("🟢 NovaPOS app.js բեռնված է");
+
+// ======================================
+// FIREBASE CONFIG
+// ======================================
+
+// Firebase-ը պետք է միացված լինի index.html-ում
+// window.firebaseApp փոփոխականի միջոցով։
+
+let firebaseAuth = null;
+let firebaseDb = null;
 
 
 // ======================================
@@ -38,1218 +48,772 @@ let sales = [];
 
 
 // ======================================
+// LOCAL STORAGE
+// ======================================
+
+function saveData() {
+    localStorage.setItem("novapos_products", JSON.stringify(products));
+    localStorage.setItem("novapos_sales", JSON.stringify(sales));
+}
+
+function loadData() {
+    const savedProducts = localStorage.getItem("novapos_products");
+    const savedSales = localStorage.getItem("novapos_sales");
+
+    if (savedProducts) {
+        try {
+            products = JSON.parse(savedProducts);
+        } catch (error) {
+            console.error("Products load error:", error);
+        }
+    }
+
+    if (savedSales) {
+        try {
+            sales = JSON.parse(savedSales);
+        } catch (error) {
+            console.error("Sales load error:", error);
+        }
+    }
+}
+
+
+// ======================================
 // FIREBASE AUTH
 // ======================================
 
-let firebaseAuth = null;
-
 async function initAuth() {
-
     try {
-
         const authModule = await import(
-            "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js"
+            "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"
         );
 
-        const auth = authModule.getAuth();
+        if (window.firebaseApp) {
+            firebaseAuth = authModule.getAuth(window.firebaseApp);
 
-        firebaseAuth = auth;
-
-        authModule.onAuthStateChanged(
-            auth,
-            function(user) {
-
-                if (user) {
-
-                    console.log(
-                        "👤 Մուտք գործած օգտատեր:",
-                        user.email
-                    );
-
-                    currentUser = user;
-
-                    showPOS();
-
-                } else {
-
-                    console.log(
-                        "🔒 Մուտք գործած օգտատեր չկա"
-                    );
-
-                    showLogin();
-                }
-            }
-        );
-
-        window.firebaseAuthModule = authModule;
+            console.log("🔥 Firebase Authentication-ը միացված է");
+        } else {
+            console.warn(
+                "⚠️ window.firebaseApp չի գտնվել։ Firebase App-ը միացրու index.html-ում։"
+            );
+        }
 
     } catch (error) {
-
-        console.error(
-            "❌ Firebase Authentication error:",
-            error
-        );
+        console.error("❌ Firebase Auth Error:", error);
     }
 }
 
 
 // ======================================
-// CURRENT USER
+// PRODUCT SEARCH
 // ======================================
 
-let currentUser = null;
-
-
-// ======================================
-// LOGIN
-// ======================================
-
-async function loginUser() {
-
-    const emailElement =
-        document.getElementById("loginEmail");
-
-    const passwordElement =
-        document.getElementById("loginPassword");
-
-    const errorElement =
-        document.getElementById("loginError");
-
-
-    if (!emailElement || !passwordElement) {
-
-        console.error(
-            "❌ Login դաշտերը դեռ index.html-ում չկան"
-        );
-
-        return;
-    }
-
-
-    const email =
-        emailElement.value.trim();
-
-    const password =
-        passwordElement.value;
-
-
-    if (errorElement) {
-        errorElement.textContent = "";
-    }
-
-
-    if (!email || !password) {
-
-        if (errorElement) {
-
-            errorElement.textContent =
-                "Լրացրու email-ը և գաղտնաբառը։";
-        }
-
-        return;
-    }
-
-
-    try {
-
-        await window.firebaseAuthModule
-            .signInWithEmailAndPassword(
-                firebaseAuth,
-                email,
-                password
-            );
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (errorElement) {
-
-            errorElement.textContent =
-                "Մուտքը չհաջողվեց։ Ստուգիր տվյալները։";
-        }
-    }
+function findProductByBarcode(barcode) {
+    return products.find(
+        product => String(product.barcode) === String(barcode)
+    );
 }
 
-
-// ======================================
-// REGISTER
-// ======================================
-
-async function registerUser() {
-
-    const emailElement =
-        document.getElementById("registerEmail");
-
-    const passwordElement =
-        document.getElementById("registerPassword");
-
-    const errorElement =
-        document.getElementById("registerError");
-
-
-    if (!emailElement || !passwordElement) {
-
-        console.error(
-            "❌ Register դաշտերը դեռ index.html-ում չկան"
-        );
-
-        return;
-    }
-
-
-    const email =
-        emailElement.value.trim();
-
-    const password =
-        passwordElement.value;
-
-
-    if (errorElement) {
-        errorElement.textContent = "";
-    }
-
-
-    if (!email || !password) {
-
-        if (errorElement) {
-
-            errorElement.textContent =
-                "Լրացրու բոլոր դաշտերը։";
-        }
-
-        return;
-    }
-
-
-    if (password.length < 6) {
-
-        if (errorElement) {
-
-            errorElement.textContent =
-                "Գաղտնաբառը պետք է լինի առնվազն 6 նիշ։";
-        }
-
-        return;
-    }
-
-
-    try {
-
-        await window.firebaseAuthModule
-            .createUserWithEmailAndPassword(
-                firebaseAuth,
-                email,
-                password
-            );
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (errorElement) {
-
-            if (
-                error.code ===
-                "auth/email-already-in-use"
-            ) {
-
-                errorElement.textContent =
-                    "Այս email-ը արդեն գրանցված է։";
-
-            } else {
-
-                errorElement.textContent =
-                    "Գրանցումը չհաջողվեց։";
-            }
-        }
-    }
-}
-
-
-// ======================================
-// LOGOUT
-// ======================================
-
-async function logoutUser() {
-
-    if (!firebaseAuth) {
-        return;
-    }
-
-
-    try {
-
-        await window.firebaseAuthModule
-            .signOut(firebaseAuth);
-
-    } catch (error) {
-
-        console.error(error);
-    }
-}
-
-
-// ======================================
-// SHOW LOGIN
-// ======================================
-
-function showLogin() {
-
-    const loginScreen =
-        document.getElementById(
-            "loginScreen"
-        );
-
-    const posApp =
-        document.getElementById(
-            "posApp"
-        );
-
-
-    if (loginScreen) {
-
-        loginScreen.style.display =
-            "flex";
-    }
-
-
-    if (posApp) {
-
-        posApp.style.display =
-            "none";
-    }
-}
-
-
-// ======================================
-// SHOW POS
-// ======================================
-
-function showPOS() {
-
-    const loginScreen =
-        document.getElementById(
-            "loginScreen"
-        );
-
-    const posApp =
-        document.getElementById(
-            "posApp"
-        );
-
-
-    if (loginScreen) {
-
-        loginScreen.style.display =
-            "none";
-    }
-
-
-    if (posApp) {
-
-        posApp.style.display =
-            "block";
-    }
-
-
-    renderProducts();
-    renderCart();
-    updateDashboard();
-}
-
-
-// ======================================
-// PAGE
-// ======================================
-
-function showPage(page) {
-
-    const pages =
-        document.querySelectorAll(
-            ".page"
-        );
-
-
-    pages.forEach(function(item) {
-
-        item.classList.remove(
-            "active"
-        );
-
-    });
-
-
-    const selected =
-        document.getElementById(page);
-
-
-    if (selected) {
-
-        selected.classList.add(
-            "active"
-        );
-    }
-
-
-    const titles = {
-
-        dashboard: "Dashboard",
-
-        products: "Ապրանքներ",
-
-        sales: "Վաճառքներ"
-
-    };
-
-
-    const title =
-        document.getElementById(
-            "pageTitle"
-        );
-
-
-    if (title) {
-
-        title.textContent =
-            titles[page] || "NovaPOS";
-    }
-
-
-    if (
-        page === "products"
-    ) {
-
-        renderProductTable();
-    }
-
-
-    if (
-        page === "sales"
-    ) {
-
-        renderSales();
-    }
-}
-
-
-// ======================================
-// PRODUCTS
-// ======================================
-
-function renderProducts() {
-
-    const grid =
-        document.getElementById(
-            "productsGrid"
-        );
-
-
-    if (!grid) {
-        return;
-    }
-
-
-    const searchInput =
-        document.getElementById(
-            "searchInput"
-        );
-
-
-    let search = "";
-
-
-    if (searchInput) {
-
-        search =
-            searchInput.value
-                .toLowerCase()
-                .trim();
-    }
-
-
-    grid.innerHTML = "";
-
-
-    products.forEach(function(product) {
-
-        const name =
-            String(product.name)
-                .toLowerCase();
-
-        const barcode =
-            String(product.barcode);
-
-
-        if (
-            search &&
-            !name.includes(search) &&
-            !barcode.includes(search)
-        ) {
-
-            return;
-        }
-
-
-        const card =
-            document.createElement(
-                "div"
-            );
-
-
-        card.className =
-            "product";
-
-
-        card.innerHTML =
-            "<h3>" +
-            escapeHTML(product.name) +
-            "</h3>" +
-
-            "<div class='product-price'>" +
-            formatMoney(product.price) +
-            "</div>" +
-
-            "<div class='product-stock'>" +
-            "Պահեստ՝ " +
-            product.stock +
-            "</div>" +
-
-            "<button onclick='addToCart(" +
-            product.id +
-            ")'>" +
-            "+ Ավելացնել" +
-            "</button>";
-
-
-        grid.appendChild(card);
-
-    });
-
-
-    const count =
-        document.getElementById(
-            "productCount"
-        );
-
-
-    if (count) {
-
-        count.textContent =
-            products.length;
-    }
-}
-
-
-// ======================================
-// ADD TO CART
-// ======================================
-
-function addToCart(productId) {
-
-    const product =
-        products.find(function(item) {
-
-            return item.id === productId;
-
-        });
-
-
-    if (!product) {
-        return;
-    }
-
-
-    if (product.stock <= 0) {
-
-        alert(
-            "Ապրանքը պահեստում չկա։"
-        );
-
-        return;
-    }
-
-
-    const existing =
-        cart.find(function(item) {
-
-            return item.id === productId;
-
-        });
-
-
-    if (existing) {
-
-        if (
-            existing.quantity >=
-            product.stock
-        ) {
-
-            alert(
-                "Պահեստում բավարար քանակ չկա։"
-            );
-
-            return;
-        }
-
-
-        existing.quantity++;
-
-    } else {
-
-        cart.push({
-
-            id: product.id,
-
-            name: product.name,
-
-            price: product.price,
-
-            quantity: 1
-
-        });
-    }
-
-
-    renderCart();
-}
-
-
-// ======================================
-// CART
-// ======================================
-
-function renderCart() {
-
-    const container =
-        document.getElementById(
-            "cartItems"
-        );
-
-
-    if (!container) {
-        return;
-    }
-
-
-    container.innerHTML = "";
-
-
-    if (cart.length === 0) {
-
-        container.innerHTML =
-            "<p class='empty'>" +
-            "Զամբյուղը դատարկ է" +
-            "</p>";
-
-        updateTotal();
-
-        return;
-    }
-
-
-    cart.forEach(function(item) {
-
-        const div =
-            document.createElement(
-                "div"
-            );
-
-
-        div.className =
-            "cart-item";
-
-
-        div.innerHTML =
-            "<div>" +
-
-            "<strong>" +
-            escapeHTML(item.name) +
-            "</strong>" +
-
-            "<small>" +
-            formatMoney(item.price) +
-            "</small>" +
-
-            "</div>" +
-
-            "<div class='cart-controls'>" +
-
-            "<button onclick='changeQuantity(" +
-            item.id +
-            ", -1)'>−</button>" +
-
-            "<span>" +
-            item.quantity +
-            "</span>" +
-
-            "<button onclick='changeQuantity(" +
-            item.id +
-            ", 1)'>+</button>" +
-
-            "</div>";
-
-
-        container.appendChild(div);
-
-    });
-
-
-    updateTotal();
-}
-
-
-// ======================================
-// QUANTITY
-// ======================================
-
-function changeQuantity(
-    id,
-    amount
-) {
-
-    const item =
-        cart.find(function(product) {
-
-            return product.id === id;
-
-        });
-
-
-    if (!item) {
-        return;
-    }
-
-
-    const product =
-        products.find(function(product) {
-
-            return product.id === id;
-
-        });
-
-
-    item.quantity =
-        item.quantity + amount;
-
-
-    if (
-        product &&
-        item.quantity >
-        product.stock
-    ) {
-
-        item.quantity =
-            product.stock;
-    }
-
-
-    if (
-        item.quantity <= 0
-    ) {
-
-        cart =
-            cart.filter(function(product) {
-
-                return product.id !== id;
-
-            });
-    }
-
-
-    renderCart();
-}
-
-
-// ======================================
-// TOTAL
-// ======================================
-
-function getCartTotal() {
-
-    let total = 0;
-
-
-    cart.forEach(function(item) {
-
-        total =
-            total +
-            item.price *
-            item.quantity;
-
-    });
-
-
-    return total;
-}
-
-
-function updateTotal() {
-
-    const element =
-        document.getElementById(
-            "cartTotal"
-        );
-
-
-    if (element) {
-
-        element.textContent =
-            formatMoney(
-                getCartTotal()
-            );
-    }
-}
-
-
-// ======================================
-// PAYMENT
-// ======================================
-
-function openPayment() {
-
-    if (cart.length === 0) {
-
-        alert(
-            "Զամբյուղը դատարկ է։"
-        );
-
-        return;
-    }
-
-
-    const total =
-        document.getElementById(
-            "paymentTotal"
-        );
-
-
-    if (total) {
-
-        total.textContent =
-            formatMoney(
-                getCartTotal()
-            );
-    }
-
-
-    const modal =
-        document.getElementById(
-            "paymentModal"
-        );
-
-
-    if (modal) {
-
-        modal.classList.add(
-            "show"
-        );
-    }
-}
-
-
-function closePayment() {
-
-    const modal =
-        document.getElementById(
-            "paymentModal"
-        );
-
-
-    if (modal) {
-
-        modal.classList.remove(
-            "show"
-        );
-    }
-}
-
-
-function completePayment(method) {
-
-    if (cart.length === 0) {
-        return;
-    }
-
-
-    const total =
-        getCartTotal();
-
-
-    cart.forEach(function(item) {
-
-        const product =
-            products.find(function(p) {
-
-                return p.id === item.id;
-
-            });
-
-
-        if (product) {
-
-            product.stock =
-                product.stock -
-                item.quantity;
-        }
-    });
-
-
-    sales.push({
-
-        id: Date.now(),
-
-        date:
-            new Date()
-                .toLocaleString(
-                    "hy-AM"
-                ),
-
-        total: total,
-
-        method: method,
-
-        items:
-            cart.map(function(item) {
-
-                return {
-
-                    name: item.name,
-
-                    price: item.price,
-
-                    quantity: item.quantity
-
-                };
-
-            })
-
-    });
-
-
-    cart = [];
-
-
-    closePayment();
-
-    renderProducts();
-
-    renderCart();
-
-    updateDashboard();
-
-    renderSales();
-
-
-    alert(
-        "✅ Վճարումը հաջողությամբ կատարվեց։"
+function findProductById(id) {
+    return products.find(
+        product => Number(product.id) === Number(id)
     );
 }
 
 
 // ======================================
-// PRODUCT MODAL
+// ADD PRODUCT TO CART
 // ======================================
 
-function openProductModal() {
+function addToCart(barcode) {
 
-    const modal =
-        document.getElementById(
-            "productModal"
-        );
+    const product = findProductByBarcode(barcode);
 
-
-    if (modal) {
-
-        modal.classList.add(
-            "show"
-        );
-    }
-}
-
-
-function closeProductModal() {
-
-    const modal =
-        document.getElementById(
-            "productModal"
-        );
-
-
-    if (modal) {
-
-        modal.classList.remove(
-            "show"
-        );
-    }
-}
-
-
-// ======================================
-// ADD PRODUCT
-// ======================================
-
-function addProduct() {
-
-    const nameElement =
-        document.getElementById(
-            "productName"
-        );
-
-    const priceElement =
-        document.getElementById(
-            "productPrice"
-        );
-
-    const barcodeElement =
-        document.getElementById(
-            "productBarcode"
-        );
-
-    const stockElement =
-        document.getElementById(
-            "productStock"
-        );
-
-
-    if (
-        !nameElement ||
-        !priceElement ||
-        !stockElement
-    ) {
-
+    if (!product) {
+        alert("❌ Ապրանքը չի գտնվել");
         return;
     }
 
+    if (product.stock <= 0) {
+        alert("❌ Ապրանքը պահեստում չկա");
+        return;
+    }
 
-    const name =
-        nameElement.value.trim();
+    const existingItem = cart.find(
+        item => item.id === product.id
+    );
 
-    const price =
-        Number(
-            priceElement.value
-        );
+    if (existingItem) {
 
-    const barcode =
-        barcodeElement
-            ? barcodeElement.value.trim()
-            : "";
+        if (existingItem.quantity >= product.stock) {
+            alert("❌ Պահեստում բավարար քանակ չկա");
+            return;
+        }
 
-    const stock =
-        Number(
-            stockElement.value
-        );
+        existingItem.quantity++;
+
+    } else {
+
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+        });
+    }
+
+    renderCart();
+}
 
 
-    if (
-        !name ||
-        price <= 0 ||
-        stock < 0
-    ) {
+// ======================================
+// ADD PRODUCT BY ID
+// ======================================
 
+function addProductById(id) {
+
+    const product = findProductById(id);
+
+    if (!product) {
+        alert("Ապրանքը չի գտնվել");
+        return;
+    }
+
+    addToCart(product.barcode);
+}
+
+
+// ======================================
+// REMOVE FROM CART
+// ======================================
+
+function removeFromCart(id) {
+
+    cart = cart.filter(
+        item => item.id !== id
+    );
+
+    renderCart();
+}
+
+
+// ======================================
+// CHANGE QUANTITY
+// ======================================
+
+function changeQuantity(id, quantity) {
+
+    const item = cart.find(
+        cartItem => cartItem.id === id
+    );
+
+    if (!item) {
+        return;
+    }
+
+    quantity = Number(quantity);
+
+    if (quantity <= 0) {
+        removeFromCart(id);
+        return;
+    }
+
+    const product = findProductById(id);
+
+    if (!product) {
+        return;
+    }
+
+    if (quantity > product.stock) {
         alert(
-            "Լրացրու ապրանքի տվյալները։"
+            `❌ Պահեստում կա միայն ${product.stock} հատ`
         );
+        return;
+    }
+
+    item.quantity = quantity;
+
+    renderCart();
+}
+
+
+// ======================================
+// INCREASE QUANTITY
+// ======================================
+
+function increaseQuantity(id) {
+
+    const item = cart.find(
+        cartItem => cartItem.id === id
+    );
+
+    if (!item) {
+        return;
+    }
+
+    changeQuantity(
+        id,
+        item.quantity + 1
+    );
+}
+
+
+// ======================================
+// DECREASE QUANTITY
+// ======================================
+
+function decreaseQuantity(id) {
+
+    const item = cart.find(
+        cartItem => cartItem.id === id
+    );
+
+    if (!item) {
+        return;
+    }
+
+    changeQuantity(
+        id,
+        item.quantity - 1
+    );
+}
+
+
+// ======================================
+// CART TOTAL
+// ======================================
+
+function getCartTotal() {
+
+    return cart.reduce(
+        (total, item) => {
+            return total + (
+                Number(item.price) *
+                Number(item.quantity)
+            );
+        },
+        0
+    );
+}
+
+
+// ======================================
+// CART ITEMS COUNT
+// ======================================
+
+function getCartItemsCount() {
+
+    return cart.reduce(
+        (total, item) => {
+            return total + Number(item.quantity);
+        },
+        0
+    );
+}
+
+
+// ======================================
+// FORMAT MONEY
+// ======================================
+
+function formatMoney(value) {
+
+    return Number(value).toLocaleString("hy-AM") + " ֏";
+}
+
+
+// ======================================
+// RENDER CART
+// ======================================
+
+function renderCart() {
+
+    const cartElement =
+        document.getElementById("cart");
+
+    if (!cartElement) {
+        return;
+    }
+
+    cartElement.innerHTML = "";
+
+    if (cart.length === 0) {
+
+        cartElement.innerHTML = `
+            <div class="empty-cart">
+                <div style="font-size:40px;">🛒</div>
+                <p>Զամբյուղը դատարկ է</p>
+            </div>
+        `;
+
+    } else {
+
+        cart.forEach(item => {
+
+            const row =
+                document.createElement("div");
+
+            row.className = "cart-item";
+
+            row.innerHTML = `
+
+                <div class="cart-item-info">
+
+                    <strong>
+                        ${escapeHTML(item.name)}
+                    </strong>
+
+                    <span>
+                        ${formatMoney(item.price)}
+                    </span>
+
+                </div>
+
+                <div class="cart-item-controls">
+
+                    <button
+                        onclick="decreaseQuantity(${item.id})"
+                    >
+                        −
+                    </button>
+
+                    <span>
+                        ${item.quantity}
+                    </span>
+
+                    <button
+                        onclick="increaseQuantity(${item.id})"
+                    >
+                        +
+                    </button>
+
+                    <button
+                        onclick="removeFromCart(${item.id})"
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+                <strong class="cart-item-total">
+                    ${formatMoney(
+                        item.price * item.quantity
+                    )}
+                </strong>
+            `;
+
+            cartElement.appendChild(row);
+        });
+    }
+
+    updateCartTotal();
+}
+
+
+// ======================================
+// UPDATE CART TOTAL
+// ======================================
+
+function updateCartTotal() {
+
+    const total =
+        getCartTotal();
+
+    const totalElement =
+        document.getElementById("cart-total");
+
+    if (totalElement) {
+
+        totalElement.textContent =
+            formatMoney(total);
+    }
+
+    const countElement =
+        document.getElementById("cart-count");
+
+    if (countElement) {
+
+        countElement.textContent =
+            getCartItemsCount();
+    }
+}
+
+
+// ======================================
+// CLEAR CART
+// ======================================
+
+function clearCart() {
+
+    if (cart.length === 0) {
+        return;
+    }
+
+    const confirmClear =
+        confirm(
+            "Վստա՞հ ես, որ ցանկանում ես դատարկել զամբյուղը։"
+        );
+
+    if (!confirmClear) {
+        return;
+    }
+
+    cart = [];
+
+    renderCart();
+}
+
+
+// ======================================
+// COMPLETE SALE
+// ======================================
+
+function completeSale() {
+
+    if (cart.length === 0) {
+
+        alert("❌ Զամբյուղը դատարկ է");
 
         return;
     }
 
+    const total =
+        getCartTotal();
 
-    products.push({
+    // Ստուգում ենք պահեստը
+    for (const item of cart) {
+
+        const product =
+            findProductById(item.id);
+
+        if (!product) {
+            continue;
+        }
+
+        if (item.quantity > product.stock) {
+
+            alert(
+                `❌ ${product.name}-ի պահեստային քանակը բավարար չէ`
+            );
+
+            return;
+        }
+    }
+
+    // Հանում ենք պահեստից
+    cart.forEach(item => {
+
+        const product =
+            findProductById(item.id);
+
+        if (product) {
+
+            product.stock -=
+                item.quantity;
+        }
+    });
+
+    // Ստեղծում ենք վաճառքը
+    const sale = {
 
         id: Date.now(),
 
-        name: name,
+        items: JSON.parse(
+            JSON.stringify(cart)
+        ),
 
-        price: price,
+        total: total,
 
-        barcode:
-            barcode ||
-            String(Date.now()),
+        date: new Date().toISOString(),
 
-        stock: stock
+        readableDate:
+            new Date().toLocaleString(
+                "hy-AM"
+            )
+    };
 
-    });
+    sales.push(sale);
+
+    saveData();
+
+    cart = [];
+
+    renderCart();
+    renderProducts();
+    renderDashboard();
+
+    alert(
+        `✅ Վաճառքը հաջողությամբ ավարտվեց։\n\nԸնդհանուր՝ ${formatMoney(total)}`
+    );
+}
 
 
-    nameElement.value = "";
+// ======================================
+// PRODUCTS RENDER
+// ======================================
 
-    priceElement.value = "";
+function renderProducts(
+    list = products
+) {
 
-    if (barcodeElement) {
-        barcodeElement.value = "";
+    const container =
+        document.getElementById("products");
+
+    if (!container) {
+        return;
     }
 
-    stockElement.value = "";
+    container.innerHTML = "";
+
+    if (list.length === 0) {
+
+        container.innerHTML = `
+            <div class="no-products">
+                Ապրանք չի գտնվել
+            </div>
+        `;
+
+        return;
+    }
+
+    list.forEach(product => {
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "product-card";
+
+        const disabled =
+            product.stock <= 0
+                ? "disabled"
+                : "";
+
+        card.innerHTML = `
+
+            <div class="product-card-body">
+
+                <h3>
+                    ${escapeHTML(product.name)}
+                </h3>
+
+                <div class="product-price">
+                    ${formatMoney(product.price)}
+                </div>
+
+                <div class="product-barcode">
+                    Շտրիխկոդ՝ ${product.barcode}
+                </div>
+
+                <div class="product-stock">
+                    Պահեստ՝ ${product.stock}
+                </div>
+
+            </div>
+
+            <button
+                class="add-product-btn"
+                ${disabled}
+                onclick="addToCart('${product.barcode}')"
+            >
+                ${product.stock > 0
+                    ? "➕ Ավելացնել"
+                    : "Չկա պահեստում"}
+            </button>
+        `;
+
+        container.appendChild(card);
+    });
+}
 
 
-    closeProductModal();
+// ======================================
+// SEARCH PRODUCT
+// ======================================
+
+function searchProduct(value) {
+
+    const text =
+        String(value)
+            .toLowerCase()
+            .trim();
+
+    if (!text) {
+
+        renderProducts(products);
+
+        return;
+    }
+
+    const filtered =
+        products.filter(product => {
+
+            return (
+                product.name
+                    .toLowerCase()
+                    .includes(text)
+                ||
+                String(product.barcode)
+                    .includes(text)
+            );
+        });
+
+    renderProducts(filtered);
+}
+
+
+// ======================================
+// BARCODE SCANNER INPUT
+// ======================================
+
+function scanBarcode(barcode) {
+
+    barcode =
+        String(barcode)
+            .trim();
+
+    if (!barcode) {
+        return;
+    }
+
+    const product =
+        findProductByBarcode(barcode);
+
+    if (!product) {
+
+        alert(
+            "❌ Այս շտրիխկոդով ապրանք չկա"
+        );
+
+        return;
+    }
+
+    addToCart(barcode);
+}
+
+
+// ======================================
+// ADD NEW PRODUCT
+// ======================================
+
+function addNewProduct(
+    name,
+    price,
+    barcode,
+    stock
+) {
+
+    name =
+        String(name).trim();
+
+    price =
+        Number(price);
+
+    barcode =
+        String(barcode).trim();
+
+    stock =
+        Number(stock);
+
+    if (!name) {
+        alert("Մուտքագրիր ապրանքի անունը");
+        return false;
+    }
+
+    if (!price || price < 0) {
+        alert("Մուտքագրիր ճիշտ գին");
+        return false;
+    }
+
+    if (!barcode) {
+        alert("Մուտքագրիր շտրիխկոդ");
+        return false;
+    }
+
+    if (products.some(
+        product =>
+            String(product.barcode) === barcode
+    )) {
+
+        alert(
+            "❌ Այս շտրիխկոդը արդեն օգտագործվում է"
+        );
+
+        return false;
+    }
+
+    if (stock < 0) {
+        stock = 0;
+    }
+
+    const newProduct = {
+
+        id:
+            Date.now(),
+
+        name:
+            name,
+
+        price:
+            price,
+
+        barcode:
+            barcode,
+
+        stock:
+            stock
+    };
+
+    products.push(newProduct);
+
+    saveData();
 
     renderProducts();
 
-    renderProductTable();
+    alert(
+        "✅ Ապրանքը ավելացվեց"
+    );
 
-    updateDashboard();
+    return true;
 }
 
 
 // ======================================
-// PRODUCT TABLE
+// DELETE PRODUCT
 // ======================================
 
-function renderProductTable() {
+function deleteProduct(id) {
 
-    const container =
-        document.getElementById(
-            "productTable"
+    const product =
+        findProductById(id);
+
+    if (!product) {
+        return;
+    }
+
+    const confirmed =
+        confirm(
+            `Ջնջե՞լ «${product.name}» ապրանքը։`
         );
 
-
-    if (!container) {
+    if (!confirmed) {
         return;
     }
 
-
-    if (products.length === 0) {
-
-        container.innerHTML =
-            "<p>Ապրանքներ չկան։";
-
-        return;
-    }
-
-
-    let html =
-        "<table>" +
-
-        "<thead>" +
-
-        "<tr>" +
-
-        "<th>Ապրանք</th>" +
-
-        "<th>Barcode</th>" +
-
-        "<th>Գին</th>" +
-
-        "<th>Պահեստ</th>" +
-
-        "</tr>" +
-
-        "</thead>" +
-
-        "<tbody>";
-
-
-    products.forEach(function(product) {
-
-        html +=
-            "<tr>" +
-
-            "<td>" +
-            escapeHTML(product.name) +
-            "</td>" +
-
-            "<td>" +
-            escapeHTML(product.barcode) +
-            "</td>" +
-
-            "<td>" +
-            formatMoney(product.price) +
-            "</td>" +
-
-            "<td>" +
-            product.stock +
-            "</td>" +
-
-            "</tr>";
-    });
-
-
-    html +=
-        "</tbody>" +
-        "</table>";
-
-
-    container.innerHTML =
-        html;
-}
-
-
-// ======================================
-// SALES
-// ======================================
-
-function renderSales() {
-
-    const container =
-        document.getElementById(
-            "salesTable"
+    products =
+        products.filter(
+            item => item.id !== id
         );
 
+    cart =
+        cart.filter(
+            item => item.id !== id
+        );
 
-    if (!container) {
-        return;
-    }
+    saveData();
 
-
-    if (sales.length === 0) {
-
-        container.innerHTML =
-            "<p>Վաճառքներ դեռ չկան։</p>";
-
-        return;
-    }
-
-
-    let html =
-        "<table>" +
-
-        "<thead>" +
-
-        "<tr>" +
-
-        "<th>Ամսաթիվ</th>" +
-
-        "<th>Գումար</th>" +
-
-        "<th>Վճարում</th>" +
-
-        "</tr>" +
-
-        "</thead>" +
-
-        "<tbody>";
-
-
-    sales.forEach(function(sale) {
-
-        html +=
-            "<tr>" +
-
-            "<td>" +
-            escapeHTML(sale.date) +
-            "</td>" +
-
-            "<td>" +
-            formatMoney(sale.total) +
-            "</td>" +
-
-            "<td>" +
-            escapeHTML(sale.method) +
-            "</td>" +
-
-            "</tr>";
-    });
-
-
-    html +=
-        "</tbody>" +
-        "</table>";
-
-
-    container.innerHTML =
-        html;
+    renderProducts();
+    renderCart();
 }
 
 
@@ -1257,71 +821,215 @@ function renderSales() {
 // DASHBOARD
 // ======================================
 
-function updateDashboard() {
+function getTodaySales() {
 
-    let total = 0;
+    const today =
+        new Date();
+
+    return sales.filter(
+        sale => {
+
+            const saleDate =
+                new Date(sale.date);
+
+            return (
+                saleDate.getFullYear() ===
+                    today.getFullYear()
+                &&
+                saleDate.getMonth() ===
+                    today.getMonth()
+                &&
+                saleDate.getDate() ===
+                    today.getDate()
+            );
+        }
+    );
+}
 
 
-    sales.forEach(function(sale) {
+function getTodayRevenue() {
 
-        total =
-            total +
-            sale.total;
+    return getTodaySales().reduce(
+        (total, sale) => {
 
-    });
+            return total +
+                Number(sale.total);
 
+        },
+        0
+    );
+}
+
+
+function renderDashboard() {
 
     const todaySales =
+        getTodaySales();
+
+    const todayRevenue =
+        getTodayRevenue();
+
+    const salesElement =
         document.getElementById(
-            "todaySales"
+            "today-sales"
         );
 
+    if (salesElement) {
 
-    if (todaySales) {
-
-        todaySales.textContent =
-            formatMoney(total);
+        salesElement.textContent =
+            todaySales.length;
     }
 
-
-    const salesCount =
+    const revenueElement =
         document.getElementById(
-            "salesCount"
+            "today-revenue"
         );
 
+    if (revenueElement) {
 
-    if (salesCount) {
-
-        salesCount.textContent =
-            sales.length;
+        revenueElement.textContent =
+            formatMoney(todayRevenue);
     }
 
-
-    const productCount =
+    const productsElement =
         document.getElementById(
-            "productCount"
+            "products-count"
         );
 
+    if (productsElement) {
 
-    if (productCount) {
-
-        productCount.textContent =
+        productsElement.textContent =
             products.length;
     }
 }
 
 
 // ======================================
-// HELPERS
+// SALES HISTORY
 // ======================================
 
-function formatMoney(number) {
+function renderSales() {
 
-    return Number(number)
-        .toLocaleString("hy-AM") +
-        " ֏";
+    const container =
+        document.getElementById(
+            "sales-list"
+        );
+
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = "";
+
+    if (sales.length === 0) {
+
+        container.innerHTML = `
+            <div>
+                Վաճառքներ դեռ չկան
+            </div>
+        `;
+
+        return;
+    }
+
+    const sortedSales =
+        [...sales].reverse();
+
+    sortedSales.forEach(sale => {
+
+        const element =
+            document.createElement("div");
+
+        element.className =
+            "sale-item";
+
+        element.innerHTML = `
+
+            <div>
+                <strong>
+                    Վաճառք #${sale.id}
+                </strong>
+
+                <small>
+                    ${sale.readableDate || ""}
+                </small>
+            </div>
+
+            <strong>
+                ${formatMoney(sale.total)}
+            </strong>
+        `;
+
+        container.appendChild(element);
+    });
 }
 
+
+// ======================================
+// RESET ALL DATA
+// ======================================
+
+function resetNovaPOS() {
+
+    const confirmed =
+        confirm(
+            "⚠️ Վստա՞հ ես։ Բոլոր ապրանքները և վաճառքները կջնջվեն։"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+    localStorage.removeItem(
+        "novapos_products"
+    );
+
+    localStorage.removeItem(
+        "novapos_sales"
+    );
+
+    products = [
+        {
+            id: 1,
+            name: "Coca Cola 0.5L",
+            price: 500,
+            barcode: "123456",
+            stock: 20
+        },
+        {
+            id: 2,
+            name: "Pepsi 0.5L",
+            price: 450,
+            barcode: "123457",
+            stock: 15
+        },
+        {
+            id: 3,
+            name: "Ջուր 0.5L",
+            price: 300,
+            barcode: "123458",
+            stock: 30
+        }
+    ];
+
+    sales = [];
+
+    cart = [];
+
+    renderProducts();
+    renderCart();
+    renderDashboard();
+    renderSales();
+
+    alert(
+        "✅ NovaPOS-ը վերականգնվեց"
+    );
+}
+
+
+// ======================================
+// HTML SECURITY
+// ======================================
 
 function escapeHTML(value) {
 
@@ -1335,7 +1043,154 @@ function escapeHTML(value) {
 
 
 // ======================================
-// START
+// ENTER KEY — BARCODE
 // ======================================
 
-initAuth();
+function setupBarcodeInput() {
+
+    const input =
+        document.getElementById(
+            "barcode-input"
+        );
+
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+
+                event.preventDefault();
+
+                scanBarcode(
+                    input.value
+                );
+
+                input.value = "";
+
+                input.focus();
+            }
+        }
+    );
+}
+
+
+// ======================================
+// SEARCH INPUT
+// ======================================
+
+function setupSearchInput() {
+
+    const input =
+        document.getElementById(
+            "search-input"
+        );
+
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener(
+        "input",
+        function() {
+
+            searchProduct(
+                input.value
+            );
+        }
+    );
+}
+
+
+// ======================================
+// GLOBAL FUNCTIONS
+// ======================================
+
+window.addToCart =
+    addToCart;
+
+window.addProductById =
+    addProductById;
+
+window.removeFromCart =
+    removeFromCart;
+
+window.changeQuantity =
+    changeQuantity;
+
+window.increaseQuantity =
+    increaseQuantity;
+
+window.decreaseQuantity =
+    decreaseQuantity;
+
+window.clearCart =
+    clearCart;
+
+window.completeSale =
+    completeSale;
+
+window.searchProduct =
+    searchProduct;
+
+window.scanBarcode =
+    scanBarcode;
+
+window.addNewProduct =
+    addNewProduct;
+
+window.deleteProduct =
+    deleteProduct;
+
+window.resetNovaPOS =
+    resetNovaPOS;
+
+window.renderProducts =
+    renderProducts;
+
+window.renderCart =
+    renderCart;
+
+window.renderSales =
+    renderSales;
+
+window.renderDashboard =
+    renderDashboard;
+
+
+// ======================================
+// START APPLICATION
+// ======================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async function() {
+
+        console.log(
+            "🚀 NovaPOS-ը սկսվեց"
+        );
+
+        // Տվյալների բեռնում
+        loadData();
+
+        // UI
+        renderProducts();
+        renderCart();
+        renderDashboard();
+        renderSales();
+
+        // Input-ներ
+        setupBarcodeInput();
+        setupSearchInput();
+
+        // Firebase
+        await initAuth();
+
+        console.log(
+            "✅ NovaPOS-ը պատրաստ է աշխատանքի"
+        );
+    }
+);
