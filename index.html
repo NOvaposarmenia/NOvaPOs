@@ -2,300 +2,392 @@
 <html lang="hy">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>NovaPOS</title>
 
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            color: #222;
+        }
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            padding: 25px;
+        }
+
+        .auth-box {
+            max-width: 420px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,.1);
+        }
+
+        .auth-box h2 {
+            margin-top: 0;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            margin: 7px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 16px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .primary {
+            width: 100%;
+            background: #2563eb;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .secondary {
+            width: 100%;
+            background: #e5e7eb;
+            margin-top: 10px;
+        }
+
+        .danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .logout {
+            background: #dc2626;
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.06);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.06);
+        }
+
+        .stat strong {
+            display: block;
+            font-size: 25px;
+            margin-top: 8px;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fill,
+                minmax(200px, 1fr)
+            );
+            gap: 15px;
+        }
+
+        .product-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .product-card h3 {
+            margin-top: 0;
+        }
+
+        .product-price {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .product-stock {
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .add-product-btn {
+            width: 100%;
+            background: #16a34a;
+            color: white;
+        }
+
+        .add-product-btn:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #eee;
+            padding: 14px 0;
+        }
+
+        .cart-item-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .cart-item-controls button {
+            background: #e5e7eb;
+        }
+
+        .cart-item-controls button:last-child {
+            background: #dc2626;
+            color: white;
+        }
+
+        .cart-item-total {
+            display: block;
+            margin-top: 8px;
+        }
+
+        .cart-total {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .sale-button {
+            width: 100%;
+            background: #16a34a;
+            color: white;
+            margin-top: 12px;
+            font-size: 17px;
+        }
+
+        .clear-button {
+            width: 100%;
+            background: #dc2626;
+            color: white;
+            margin-top: 8px;
+        }
+
+        .search {
+            margin-bottom: 20px;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f3f4f6;
+        }
+
+        .sale-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sale-item small {
+            display: block;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<!-- ============================= -->
-<!-- LOGIN SCREEN -->
-<!-- ============================= -->
+    <!-- ============================= -->
+    <!-- AUTH -->
+    <!-- ============================= -->
 
-<div id="loginScreen" class="auth-screen">
+    <section id="auth-section">
 
-    <div class="auth-box">
+        <div class="auth-box">
 
-        <div class="auth-logo">
-            N
-        </div>
+            <h2>🟢 NovaPOS</h2>
 
-        <h1>NovaPOS</h1>
+            <p>Մուտք գործիր կամ ստեղծիր հաշիվ</p>
 
-        <p class="auth-subtitle">
-            Մուտք գործիր համակարգ
-        </p>
+            <input
+                id="register-email"
+                type="email"
+                placeholder="Email"
+            >
 
-        <input
-            id="loginEmail"
-            type="email"
-            placeholder="Email"
-        >
+            <input
+                id="register-password"
+                type="password"
+                placeholder="Գաղտնաբառ"
+            >
 
-        <input
-            id="loginPassword"
-            type="password"
-            placeholder="Գաղտնաբառ"
-        >
+            <button
+                class="primary"
+                onclick="registerUser()"
+            >
+                Գրանցվել
+            </button>
 
-        <button
-            class="auth-button"
-            onclick="loginUser()"
-        >
-            🔐 Մուտք գործել
-        </button>
+            <button
+                class="secondary"
+                onclick="loginUser()"
+            >
+                Մուտք գործել
+            </button>
 
-        <p
-            id="loginError"
-            class="auth-error"
-        ></p>
-
-        <button
-            class="switch-auth"
-            onclick="showRegister()"
-        >
-            Գրանցվել
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- ============================= -->
-<!-- REGISTER SCREEN -->
-<!-- ============================= -->
-
-<div
-    id="registerScreen"
-    class="auth-screen"
-    style="display:none;"
->
-
-    <div class="auth-box">
-
-        <div class="auth-logo">
-            N
-        </div>
-
-        <h1>NovaPOS</h1>
-
-        <p class="auth-subtitle">
-            Ստեղծիր նոր հաշիվ
-        </p>
-
-        <input
-            id="registerEmail"
-            type="email"
-            placeholder="Email"
-        >
-
-        <input
-            id="registerPassword"
-            type="password"
-            placeholder="Գաղտնաբառ"
-        >
-
-        <button
-            class="auth-button"
-            onclick="registerUser()"
-        >
-            📝 Գրանցվել
-        </button>
-
-        <p
-            id="registerError"
-            class="auth-error"
-        ></p>
-
-        <button
-            class="switch-auth"
-            onclick="showLogin()"
-        >
-            ← Վերադառնալ մուտքին
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- ============================= -->
-<!-- POS APP -->
-<!-- ============================= -->
-
-<div
-    id="posApp"
-    class="app"
-    style="display:none;"
->
-
-    <!-- SIDEBAR -->
-
-    <aside class="sidebar">
-
-        <div class="brand">
-
-            <div class="brand-icon">
-                N
+            <div
+                id="auth-status"
+                class="status"
+            >
+                Firebase-ը բեռնվում է...
             </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ============================= -->
+    <!-- APP -->
+    <!-- ============================= -->
+
+    <section
+        id="app-section"
+        class="hidden"
+    >
+
+        <header>
+
+            <h1>NovaPOS</h1>
 
             <div>
+                <span id="user-email"></span>
 
-                <strong>
-                    NovaPOS
-                </strong>
-
-                <span>
-                    Point of Sale
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <nav>
-
-            <button
-                class="nav-btn active"
-                onclick="showPage('dashboard')"
-            >
-                📊 Dashboard
-            </button>
-
-            <button
-                class="nav-btn"
-                onclick="showPage('products')"
-            >
-                📦 Ապրանքներ
-            </button>
-
-            <button
-                class="nav-btn"
-                onclick="showPage('sales')"
-            >
-                🧾 Վաճառքներ
-            </button>
-
-            <button
-                class="nav-btn logout-btn"
-                onclick="logoutUser()"
-            >
-                🚪 Ելք
-            </button>
-
-        </nav>
-
-    </aside>
-
-
-    <!-- MAIN -->
-
-    <main class="main">
-
-        <header class="topbar">
-
-            <div>
-
-                <h1 id="pageTitle">
-                    Dashboard
-                </h1>
-
-                <p>
-                    Բարի գալուստ NovaPOS
-                </p>
-
-            </div>
-
-
-            <div class="online">
-                ● Online
+                <button
+                    class="logout"
+                    onclick="logoutUser()"
+                >
+                    Դուրս գալ
+                </button>
             </div>
 
         </header>
 
 
-        <!-- ============================= -->
-        <!-- DASHBOARD -->
-        <!-- ============================= -->
+        <div class="container">
 
-        <section
-            id="dashboard"
-            class="page active"
-        >
+            <!-- STATS -->
 
             <div class="stats">
 
-                <div class="stat-card">
+                <div class="stat">
+                    Այսօրվա վաճառքներ
+                    <strong id="today-sales">
+                        0
+                    </strong>
+                </div>
 
-                    <span>
-                        Այսօրվա վաճառք
-                    </span>
-
-                    <strong id="todaySales">
+                <div class="stat">
+                    Այսօրվա եկամուտ
+                    <strong id="today-revenue">
                         0 ֏
                     </strong>
-
                 </div>
 
-
-                <div class="stat-card">
-
-                    <span>
-                        Վաճառքների քանակ
-                    </span>
-
-                    <strong id="salesCount">
+                <div class="stat">
+                    Ապրանքներ
+                    <strong id="products-count">
                         0
                     </strong>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span>
-                        Ապրանքներ
-                    </span>
-
-                    <strong id="productCount">
-                        0
-                    </strong>
-
                 </div>
 
             </div>
 
 
-            <div class="pos-layout">
+            <div class="dashboard">
 
                 <!-- PRODUCTS -->
 
-                <div class="products-panel">
+                <div class="panel">
 
-                    <div class="section-head">
+                    <h2>📦 Ապրանքներ</h2>
 
-                        <h2>
-                            Ապրանքներ
-                        </h2>
-
-                        <input
-                            id="searchInput"
-                            type="text"
-                            placeholder="🔎 Որոնել..."
-                            oninput="renderProducts()"
-                        >
-
-                    </div>
-
+                    <input
+                        id="search-input"
+                        class="search"
+                        type="text"
+                        placeholder="Փնտրել ապրանք կամ շտրիխկոդ..."
+                    >
 
                     <div
-                        id="productsGrid"
-                        class="products-grid"
+                        id="products"
+                        class="products"
                     ></div>
 
                 </div>
@@ -303,376 +395,125 @@
 
                 <!-- CART -->
 
-                <div class="cart-panel">
+                <div class="panel">
 
-                    <h2>
-                        🛒 Զամբյուղ
-                    </h2>
+                    <h2>🛒 Զամբյուղ</h2>
 
-
-                    <div
-                        id="cartItems"
-                        class="cart-items"
+                    <input
+                        id="barcode-input"
+                        type="text"
+                        placeholder="Շտրիխկոդ..."
                     >
 
-                        <p class="empty">
-                            Զամբյուղը դատարկ է
-                        </p>
+                    <div id="cart"></div>
 
+                    <div class="cart-total">
+                        Ընդհանուր՝
+                        <span id="cart-total">
+                            0 ֏
+                        </span>
                     </div>
-
-
-                    <div class="cart-bottom">
-
-                        <div class="total">
-
-                            <span>
-                                Ընդամենը
-                            </span>
-
-                            <strong id="cartTotal">
-                                0 ֏
-                            </strong>
-
-                        </div>
-
-
-                        <button
-                            class="pay-btn"
-                            onclick="openPayment()"
-                        >
-                            💳 Վճարել
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- ============================= -->
-        <!-- PRODUCTS PAGE -->
-        <!-- ============================= -->
-
-        <section
-            id="products"
-            class="page"
-        >
-
-            <div class="page-card">
-
-                <div class="section-head">
-
-                    <div>
-
-                        <h2>
-                            Ապրանքների կառավարում
-                        </h2>
-
-                        <p>
-                            Ավելացրու ապրանքներ
-                        </p>
-
-                    </div>
-
 
                     <button
-                        class="primary-btn"
-                        onclick="openProductModal()"
+                        class="sale-button"
+                        onclick="completeSale()"
                     >
-                        + Ավելացնել ապրանք
+                        💳 Վաճառք
+                    </button>
+
+                    <button
+                        class="clear-button"
+                        onclick="clearCart()"
+                    >
+                        🗑 Դատարկել
                     </button>
 
                 </div>
 
+            </div>
 
-                <div id="productTable"></div>
+
+            <!-- ADD PRODUCT -->
+
+            <div
+                class="panel"
+                style="margin-top:20px;"
+            >
+
+                <h2>➕ Ավելացնել ապրանք</h2>
+
+                <input
+                    id="new-product-name"
+                    type="text"
+                    placeholder="Ապրանքի անուն"
+                >
+
+                <input
+                    id="new-product-price"
+                    type="number"
+                    placeholder="Գին"
+                >
+
+                <input
+                    id="new-product-barcode"
+                    type="text"
+                    placeholder="Շտրիխկոդ"
+                >
+
+                <input
+                    id="new-product-stock"
+                    type="number"
+                    placeholder="Քանակ"
+                >
+
+                <button
+                    class="primary"
+                    onclick="createProductFromForm()"
+                >
+                    Ավելացնել ապրանք
+                </button>
 
             </div>
 
-        </section>
 
+            <!-- SALES -->
 
-        <!-- ============================= -->
-        <!-- SALES PAGE -->
-        <!-- ============================= -->
+            <div
+                class="panel"
+                style="margin-top:20px;"
+            >
 
-        <section
-            id="sales"
-            class="page"
-        >
+                <h2>📊 Վաճառքների պատմություն</h2>
 
-            <div class="page-card">
-
-                <h2>
-                    🧾 Վաճառքների պատմություն
-                </h2>
-
-                <div id="salesTable"></div>
+                <div id="sales-list"></div>
 
             </div>
 
-        </section>
 
-    </main>
+            <!-- RESET -->
 
-</div>
+            <div
+                class="panel"
+                style="margin-top:20px;"
+            >
 
+                <button
+                    class="danger"
+                    onclick="resetNovaPOS()"
+                >
+                    ⚠️ Վերականգնել NovaPOS-ը
+                </button>
 
-<!-- ============================= -->
-<!-- PRODUCT MODAL -->
-<!-- ============================= -->
-
-<div
-    id="productModal"
-    class="modal"
->
-
-    <div class="modal-box">
-
-        <button
-            class="close"
-            onclick="closeProductModal()"
-        >
-            ×
-        </button>
-
-
-        <h2>
-            Ավելացնել ապրանք
-        </h2>
-
-
-        <input
-            id="productName"
-            placeholder="Ապրանքի անուն"
-        >
-
-
-        <input
-            id="productPrice"
-            type="number"
-            placeholder="Գին"
-        >
-
-
-        <input
-            id="productBarcode"
-            placeholder="Barcode"
-        >
-
-
-        <input
-            id="productStock"
-            type="number"
-            placeholder="Քանակ"
-        >
-
-
-        <button
-            class="primary-btn full"
-            onclick="addProduct()"
-        >
-            Ավելացնել
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- ============================= -->
-<!-- PAYMENT MODAL -->
-<!-- ============================= -->
-
-<div
-    id="paymentModal"
-    class="modal"
->
-
-    <div class="modal-box">
-
-        <button
-            class="close"
-            onclick="closePayment()"
-        >
-            ×
-        </button>
-
-
-        <h2>
-            Վճարում
-        </h2>
-
-
-        <div class="payment-total">
-
-            <span>
-                Ընդամենը
-            </span>
-
-            <strong id="paymentTotal">
-                0 ֏
-            </strong>
+            </div>
 
         </div>
 
-
-        <div class="payment-methods">
-
-            <button
-                onclick="completePayment('Կանխիկ')"
-            >
-                💵 Կանխիկ
-            </button>
-
-            <button
-                onclick="completePayment('Քարտ')"
-            >
-                💳 Քարտ
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
+    </section>
 
 
-<!-- ============================= -->
-<!-- FIREBASE -->
-<!-- ============================= -->
+    <!-- APP JS -->
 
-<script type="module">
-
-    import {
-        initializeApp
-    } from
-    "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-
-
-    import {
-        getDatabase
-    } from
-    "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
-
-
-    const firebaseConfig = {
-
-        apiKey: "ՔՈ_API_KEY",
-
-        authDomain:
-            "novapos-1a2e1.firebaseapp.com",
-
-        databaseURL:
-            "https://novapos-1a2e1-default-rtdb.firebaseio.com",
-
-        projectId:
-            "novapos-1a2e1",
-
-        storageBucket:
-            "novapos-1a2e1.firebasestorage.app",
-
-        messagingSenderId:
-            "ՔՈ_MESSAGING_SENDER_ID",
-
-        appId:
-            "ՔՈ_APP_ID"
-
-    };
-
-
-    const app =
-        initializeApp(
-            firebaseConfig
-        );
-
-
-    const database =
-        getDatabase(app);
-
-
-    window.novaFirebase = {
-
-        app: app,
-
-        database: database
-
-    };
-
-
-    console.log(
-        "🔥 NovaPOS Firebase-ը միացված է!"
-    );
-
-</script>
-
-
-<script src="app.js"></script>
-
-
-<script>
-
-function showRegister() {
-
-    document.getElementById(
-        "loginScreen"
-    ).style.display = "none";
-
-
-    document.getElementById(
-        "registerScreen"
-    ).style.display = "flex";
-}
-
-
-function showLogin() {
-
-    document.getElementById(
-        "loginScreen"
-    ).style.display = "flex";
-
-
-    document.getElementById(
-        "registerScreen"
-    ).style.display = "none";
-
-
-    const pos =
-        document.getElementById(
-            "posApp"
-        );
-
-
-    if (pos) {
-
-        pos.style.display = "none";
-
-    }
-}
-
-</script>
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
-    const firebaseConfig = {
-        apiKey: "ՔՈ_API_KEY",
-        authDomain: "ՔՈ_PROJECT_ID.firebaseapp.com",
-        projectId: "ՔՈ_PROJECT_ID",
-        storageBucket: "ՔՈ_PROJECT_ID.appspot.com",
-        messagingSenderId: "ՔՈ_MESSAGING_SENDER_ID",
-        appId: "ՔՈ_APP_ID"
-    };
-
-    window.firebaseApp = initializeApp(firebaseConfig);
-
-    console.log("🔥 Firebase App-ը միացված է");
-</script>
-
-<script src="./app.js"></script>
+    <script src="./app.js"></script>
 
 </body>
 </html>
