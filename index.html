@@ -655,6 +655,24 @@ function showLogin() {
 }
 
 </script>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+    const firebaseConfig = {
+        apiKey: "ՔՈ_API_KEY",
+        authDomain: "ՔՈ_PROJECT_ID.firebaseapp.com",
+        projectId: "ՔՈ_PROJECT_ID",
+        storageBucket: "ՔՈ_PROJECT_ID.appspot.com",
+        messagingSenderId: "ՔՈ_MESSAGING_SENDER_ID",
+        appId: "ՔՈ_APP_ID"
+    };
+
+    window.firebaseApp = initializeApp(firebaseConfig);
+
+    console.log("🔥 Firebase App-ը միացված է");
+</script>
+
+<script src="./app.js"></script>
 
 </body>
 </html>
